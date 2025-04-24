@@ -1,0 +1,17 @@
+{
+  "name": "redis",
+  "version": "1.0.0",
+  "main": "latihan-redis.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "description": "",
+  "dependencies": {
+    "mysql2": "^3.14.0",
+    "redis": "^4.7.0"
+  }
+}
