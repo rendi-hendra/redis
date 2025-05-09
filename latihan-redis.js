@@ -1,31 +1,41 @@
 import { createClient } from "redis";
-import mysql from "mysql2/promise";
 
-async function main() {
-  const db = await mysql.createConnection({
-    host: "localhost",
-    user: "root",
-    password: "",
-    database: "data_mahasiswa",
-  });
-  const client = await createClient()
-    .on("error", (err) => console.log("Redis Client Error", err))
-    .connect();
+const client = createClient();
+client.on("error", (err) => console.log("Redis Client Error", err));
+await client.connect();
+console.log("Connect!");
 
-  console.log("Connected!");
+// List
+// Queue
 
-  const cached = await client.get("dosen");
-  if (cached) {
-    console.log("Ambil dari Redis cache:");
-    console.log(JSON.parse(cached));
-    return;
-  }
+// // Buat session hanya jika belum ada
+// await client.set("session:user1", "token_abc", {
+//   NX: true,
+//   EX: 3,
+// });
 
-  const [rows] = await db.execute("SELECT * FROM dosen");
-  await client.set("dosen", JSON.stringify(rows));
-  console.log(rows);
+// setInterval(async () => {
+//   const getData = await client.get("session:user1");
+//   const time = await client.ttl("session:user1");
+//   console.log("Data:", getData);
+//   console.log("TTL:", time);
+// }, 1000);
 
-  client.quit;
+const nomor = await client.incr("antrian:counter");
+const idPasien = `pasien:${nomor}`;
+
+// const isAdded = await client.sAdd("antrian:terdaftar", idPasien);
+const isAdded = await client.sAdd("antrian:terdaftar", idPasien);
+
+if (isAdded) {
+  await client.rPush("antrian:umum", idPasien); // hanya antri jika belum pernah antri
+  console.log("Pasien berhasil masuk antrian");
+} else {
+  console.log("Pasien sudah dalam antrian");
 }
 
-main().catch(console.error);
+const next = await client.lPop("antrian:umum");
+if (next) {
+  await client.sRem("antrian:terdaftar", next);
+  console.log("Panggil pasien:", next);
+}
